@@ -18,6 +18,7 @@ class Produk extends Model
         'image',
         'price',
         'stock',
+        'category_id',
     ];
 
     protected function ImageUrl(): Attribute{
