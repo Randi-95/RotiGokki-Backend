@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class CategoryController extends Controller
 {
@@ -13,8 +14,13 @@ class CategoryController extends Controller
      */
     public function index()
     {
-        $categories = Category::latest()->get();
-        return response()->json($categories);
+        $kategori = Category::all();
+
+        return response()->json([
+            'status' => true,
+            'message' => 'kategori berhasil ditemukan',
+            'data' => $kategori
+        ], 202);
     }
 
     /**
@@ -22,13 +28,24 @@ class CategoryController extends Controller
      */
     public function store(Request $request)
     {
-         $validatedData = $request->validate([
-        'name' => 'required|string|unique:categories|max:255',
+        $validator = Validator::make($request->all(),[
+            'name' => 'required'
         ]);
 
-        $category = Category::create($validatedData);
+        if($validator->fails()){
+            return response()->json([
+                'status' => false,
+                'message' => 'data gagal ditambahkan',
+                'error' => $validator->errors()
+            ],404);
+        }
 
-        return response()->json($category, 201);
+        $category = Category::create($request->all());
+        return response()->json([
+            'status' => true,
+            'message' => 'data berhasil ditambahkan',
+            'data' => $category
+        ],202);
     }
 
     /**

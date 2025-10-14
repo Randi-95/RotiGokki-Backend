@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Produk;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,6 +18,12 @@ class ProdukController extends Controller
         return response()->json($products);
     }
 
+    public function getProductsByCategory(Category $category){
+        $products = $category->products()->paginate(4);
+
+        return response()->json($products);
+    }
+
      public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -25,7 +32,7 @@ class ProdukController extends Controller
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
             'category_id'=> 'required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
@@ -41,7 +48,6 @@ class ProdukController extends Controller
         $product = Produk::create($data);
         return response()->json($product->append('image_url'), 201);
     }
-
 
     public function show(Produk $product)
     {
@@ -59,7 +65,11 @@ class ProdukController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json($validator->errors(), 422);
+            return response()->json([
+                'status' => false,
+                'message' => 'data gagal diperbarui',
+                'error' => $validator->errors()
+            ]);
         }
 
         $data = $validator->validated();

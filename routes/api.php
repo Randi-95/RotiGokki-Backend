@@ -18,6 +18,8 @@ Route::post('/products', [ProdukController::class, 'store']);
 Route::put('/products/{product}', [ProdukController::class, 'update']);
 Route::delete('/products/{product}', [ProdukController::class, 'destroy']);
 
+Route::get('/kategori/{category}/products', [ProdukController::class, 'getProductsByCategory']);
+
 Route::prefix('/auth')->group(function(){
     Route::post('/login', [AuthController::class, 'login']);
 });
