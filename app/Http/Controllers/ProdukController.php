@@ -21,7 +21,11 @@ class ProdukController extends Controller
     public function getProductsByCategory(Category $category){
         $products = $category->products()->paginate(4);
 
-        return response()->json($products);
+          $products->getCollection()->transform(function ($product) {
+        return $product->append('image_url');
+    });
+
+    return response()->json($products);
     }
 
      public function store(Request $request)
@@ -54,35 +58,33 @@ class ProdukController extends Controller
         return response()->json($product->append('image_url'));
     }
 
-    public function update(Request $request, Produk $product)
+   public function update(Request $request, Produk $product)
     {
         $validator = Validator::make($request->all(), [
             'nama' => 'sometimes|required|string|max:255',
-            'deskripsi' => 'nullable|string',
+            'deskripsi' => 'sometimes|nullable|string',
             'price' => 'sometimes|required|numeric|min:0',
             'stock' => 'sometimes|required|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'category_id'=> 'sometimes|required|integer|min:0',
+            'image' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
         if ($validator->fails()) {
-            return response()->json([
-                'status' => false,
-                'message' => 'data gagal diperbarui',
-                'error' => $validator->errors()
-            ]);
+            return response()->json($validator->errors(), 422);
         }
 
         $data = $validator->validated();
 
         if ($request->hasFile('image')) {
             if ($product->image) {
-                Storage::disk('public')->delete($product->image); // Hapus gambar lama
+                Storage::disk('public')->delete($product->image);
             }
-            $data['image'] = $request->file('image')->store('products', 'public'); // Upload gambar baru
+            $data['image'] = $request->file('image')->store('products', 'public');
         }
 
         $product->update($data);
-        return response()->json($product->append('image_url'));
+
+        return response()->json($product->append('image_url'), 200);
     }
 
      public function destroy(Produk $product)
