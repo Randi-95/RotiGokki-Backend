@@ -20,10 +20,25 @@ class AuthController extends Controller
  
     if (! $user || !Hash::check($request->password, $user->password)) {
         throw ValidationException::withMessages([
-            'email' => ['The provided credentials are incorrect.'],
+            'email' => ['Email Atau password salah'],
         ]);
     }
  
-    return $user->createToken('admingokki')->plainTextToken;
+    $token = $user->createToken('admingokki')->plainTextToken;
+
+    return response()->json([
+            'message' => 'Login successful',
+            'authToken' => $token,
+            'user' => $user 
+    ]);
+    } 
+
+    public function logout(Request $request)
+    {
+    $request->user()->currentAccessToken()->delete();
+        
+    return response()->json([
+        'message' => 'Berhasil Logout'
+    ]);
     }
 }

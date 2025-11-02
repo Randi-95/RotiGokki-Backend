@@ -29,10 +29,9 @@ class OutletController extends Controller
             $query->where('city', $request->city);
         }
 
-        $outlets = $query->latest()->paginate(3);
+         $outlets = $query->latest()->paginate(3)->appends($request->query());
         return response()->json($outlets);
     }
-
 
     public function cities()
     {
@@ -58,7 +57,7 @@ class OutletController extends Controller
             'alamat' => 'required|string',
             'city' => 'required',
             'jam' => 'required|string',
-            'nomor_telepon' => 'required',
+            'nomor_telepon' => '',
             'link_map' => 'required|string'
         ]);
 
@@ -87,14 +86,7 @@ class OutletController extends Controller
         //
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(String $id)
-    {
-        // $outlets = Outlet::findOrFail($id);
-
-    }
+    
 
     /**
      * Update the specified resource in storage.
@@ -126,25 +118,7 @@ class OutletController extends Controller
         ],202);
     }
 
-    public function search(Request $request){
-        $query = Outlet::query();
-
-        if($request->has('search_term') && $request->search_term != ''){
-            $query->where(function($q) use ($request) {
-                $q->where('name', 'LIKE', '%' . $request->search_term . '%')
-                ->orWhere('address', 'LIKE', '%' . $request->search_term . '%');
-            });
-        }
-
-        if ($request->has('city') && $request->city != '') {
-            $query->where('city', $request->city);
-        }
-
-        $outlets = $query->get();
-
-        return response()->json($outlets);
-
-    }
+   
 
     /**
      * Remove the specified resource from storage.
@@ -158,5 +132,14 @@ class OutletController extends Controller
             'status' => true,
             'message' => 'data berhasil dihapus',
         ],202);
+    }
+
+    public function countOutlet() {
+        $length = Outlet::count();
+
+        return response()->json(
+            [
+                'length'=> $length
+            ],202);
     }
 }

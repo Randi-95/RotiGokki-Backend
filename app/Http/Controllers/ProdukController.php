@@ -12,9 +12,9 @@ class ProdukController extends Controller
 {
     public function index()
     {
-        $products = Produk::all()->map(function ($product) {
-            return $product->append('image_url');
-        });
+        $products = Produk::with('kategori')->latest()->paginate(4);
+        $products->append('image_url');
+
         return response()->json($products);
     }
 
@@ -35,7 +35,7 @@ class ProdukController extends Controller
             'deskripsi' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'stock' => 'required|integer|min:0',
-            'category_id'=> 'required|integer|min:0',
+            'category_id'=> 'required',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
 
@@ -53,9 +53,12 @@ class ProdukController extends Controller
         return response()->json($product->append('image_url'), 201);
     }
 
-    public function show(Produk $product)
+    public function show(Produk $product,String $id)
     {
-        return response()->json($product->append('image_url'));
+        $products = Produk::with('kategori')->findOrFail($id);
+
+        if(!$products) response()->json(['data tidak ditemukan', 404]);
+        return response()->json($products->append('image_url'));
     }
 
    public function update(Request $request, Produk $product)
@@ -94,5 +97,14 @@ class ProdukController extends Controller
         }
         $product->delete();
         return response()->json(null, 204);
+    }
+
+    public function countProduct() {
+        $length = Produk::count();
+
+        return response()->json(
+            [
+                'length'=> $length
+            ],202);
     }
 }

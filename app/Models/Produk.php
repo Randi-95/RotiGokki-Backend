@@ -26,4 +26,8 @@ class Produk extends Model
             get: fn() =>$this->image ? Storage::url($this->image): null,
         );
     }
+
+    public function kategori() {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
 }

@@ -71,4 +71,22 @@ class CategoryController extends Controller
     {
         //
     }
+
+    public function countCategory() {
+        $length = Category::count();
+
+        return response()->json(
+            [
+                'length'=> $length
+            ],202);
+    }
+
+    public function summary() {
+        $produk = Category::query()->withCount('products')->get();
+
+        return response()->json([
+            'message' => 'data total produk per kategori berhasil ditemukan',
+            'data' => $produk
+        ],202);
+    }
 }
