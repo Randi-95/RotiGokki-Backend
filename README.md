@@ -36,3 +36,60 @@ Buka terminal Anda dan jalankan perintah berikut untuk mengunduh file proyek:
 ```bash
 git clone https://github.com/Randi-95/RotiGokki-Backend
 cd RotiGokki-Backend
+```
+
+### 2.Install Dependensi Composer
+
+Install semua paket PHP yang dibutuhkan oleh proyek:
+
+```bash
+composer install
+```
+
+### 3. Buat File Environment (.env)
+
+Salin file .env.example sebagai dasar untuk file konfigurasi Anda:
+
+```bash
+cp .env.example .env
+```
+### 4. Generate Application Key
+
+Setiap aplikasi Laravel membutuhkan kunci unik. Hasilkan kunci tersebut dengan perintah:
+
+```bash
+php artisan key:generate
+```
+
+### 5.  Konfigurasi Database
+
+Buka file .env yang baru Anda buat dan atur koneksi database Anda. Pastikan Anda sudah membuat database kosong (misalnya, bernama db_rotigokki) sebelum lanjut ke langkah berikutnya.
+
+```bash
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE= rotigokkibackend // <-- Ganti dengan nama database Anda
+DB_USERNAME=root            // <-- Ganti dengan username database Anda
+DB_PASSWORD=               // <-- Ganti dengan password database Anda
+```
+
+### 6. Import Database 
+
+Proyek ini menggunakan database dump (file .sql). Anda tidak perlu menjalankan php artisan migrate.
+
+### 7.  Buat Storage Link
+
+Setelah database terisi, jalankan perintah ini. Ini akan membuat symbolic link agar file yang diunggah (seperti gambar produk) dapat diakses secara publik.
+
+```bash
+php artisan storage:link
+```
+
+### 8.  Jalankan server lokal  
+
+Setelah semua langkah instalasi selesai, Anda dapat menjalankan server pengembangan lokal:
+
+```bash
+php artisan serve
+```
