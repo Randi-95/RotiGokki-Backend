@@ -16,18 +16,12 @@ class Pesanan extends Model
         'shipping_address',
         'total_amount',
         'status',
+        'outlet_id'
     ];
 
-    /**
-     * [PERBAIKAN]
-     * Hapus komentar dan ganti nama fungsinya menjadi 'details'
-     */
+
   public function details(): HasMany
     {
-        // Parameter:
-        // 1. Nama model yang berelasi (DetailPesanan::class)
-        // 2. Foreign key di tabel 'detail_pesanans' (default: pesanan_id)
-        // 3. Local key di tabel 'pesanans' (default: id)
         return $this->hasMany(DetailPesanan::class, 'pesanan_id', 'id');
     }
 }

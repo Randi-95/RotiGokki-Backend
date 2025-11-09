@@ -134,6 +134,12 @@ class OutletController extends Controller
         ],202);
     }
 
+    public function listAll()
+    {
+        $outlets = Outlet::orderBy('nama', 'asc')->get();
+        return response()->json($outlets);
+    }
+
     public function countOutlet() {
         $length = Outlet::count();
 

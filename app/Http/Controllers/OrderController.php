@@ -4,40 +4,64 @@ namespace App\Http\Controllers;
 
 use App\Models\DetailPesanan;
 use App\Models\Pesanan;
-use App\Models\Produk;
+use App\Models\Produk; 
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Auth; 
 
 class OrderController extends Controller
 {
+  
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request) 
     {
-        $query = Pesanan::query()->latest();
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['message' => 'User tidak terautentikasi'], 401);
+            }
 
-        if ($request->filled('search')) {
-            $searchTerm = $request->input('search');
-            $query->where(function($q) use ($searchTerm) {
-                $q->where('customer_name', 'like', "%{$searchTerm}%")
-                  ->orWhere('id', 'like', "%{$searchTerm}%");
-            });
+            // 'with('outlet')' <-- Ini adalah kemungkinan biang keroknya
+            $query = Pesanan::query()->latest();
+
+            if ($request->filled('search')) {
+                $searchTerm = $request->input('search');
+                $query->where(function($q) use ($searchTerm) {
+                    $q->where('customer_name', 'like', "%{$searchTerm}%")
+                      ->orWhere('id', 'like', "%{$searchTerm}%");
+                });
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->input('status'));
+            }
+
+            if ($request->filled('date')) {
+                $query->whereDate('created_at', $request->input('date'));
+            }
+
+            if ($user->role === 'admin_outlet') {
+                $query->where('outlet_id', $user->outlet_id);
+            } elseif ($user->role === 'superadmin' && $request->filled('outlet_id')) {
+                $query->where('outlet_id', $request->input('outlet_id'));
+            }
+
+            $pesanans = $query->paginate(4)->appends($request->query()); 
+            return response()->json($pesanans, 200);
+
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Query di OrderController@index Gagal: ' . $th->getMessage(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine()
+            ], 500);
         }
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->input('status'));
-        }
-
-        if ($request->filled('date')) {
-            $query->whereDate('created_at', $request->input('date'));
-        }
-
-        $pesanans = $query->paginate(4); 
-        return response()->json($pesanans, 200);
     }
 
     /**
@@ -50,6 +74,7 @@ class OrderController extends Controller
             'customer_whatsapp' => 'required|string|max:20',
             'shipping_address' => 'required|string',
             'total_amount' => 'required|numeric',
+            'outlet_id' => 'required|integer|exists:outlets,id', 
             'items' => 'required|array',
             'items.*.product_id' => 'required|integer|exists:produks,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -69,6 +94,7 @@ class OrderController extends Controller
                 'shipping_address' => $request->shipping_address,
                 'total_amount' => $request->total_amount,
                 'status' => 'pending',
+                'outlet_id' => $request->outlet_id,
             ]);
 
             foreach ($request->items as $item) {
@@ -79,9 +105,16 @@ class OrderController extends Controller
                     'price' => $item['price'],
                 ]);
 
+                $stockPivot = DB::table('outlet_produk')
+                    ->where('outlet_id', $request->outlet_id)
+                    ->where('product_id', $item['product_id']);
 
-                $produk = Produk::find($item['product_id']);
-                $produk->decrement('stock', $item['quantity']);
+                $currentStock = $stockPivot->value('stok');
+                if ($currentStock < $item['quantity']) {
+                    throw new \Exception('Stok untuk produk ID ' . $item['product_id'] . ' di outlet ini tidak cukup.');
+                }
+                
+                $stockPivot->decrement('stok', $item['quantity']);
             }
 
             DB::commit();
@@ -102,16 +135,22 @@ class OrderController extends Controller
 
     public function cancel(Pesanan $pesanan)
     {
+        $user = Auth::user();
+        if ($user->role === 'admin_outlet' && $pesanan->outlet_id !== $user->outlet_id) {
+            return response()->json(['message' => 'Akses ditolak. Anda tidak bisa membatalkan pesanan outlet lain.'], 403);
+        }
         if ($pesanan->status !== 'pending') {
             return response()->json(['message' => 'Hanya pesanan dengan status Pending yang bisa dibatalkan.'], 422);
         }
-        
+
         DB::beginTransaction();
         try {
-            $pesanan->load('details.product');
-
+            $pesanan->load('details');
             foreach ($pesanan->details as $detail) {
-                Produk::find($detail->product_id)->increment('stock', $detail->quantity);
+                DB::table('outlet_produk')
+                    ->where('outlet_id', $pesanan->outlet_id) 
+                    ->where('product_id', $detail->product_id)
+                    ->increment('stok', $detail->quantity);
             }
 
             $pesanan->status = 'Dibatalkan';
@@ -119,7 +158,6 @@ class OrderController extends Controller
 
             DB::commit();
             return response()->json(['message' => 'Pesanan berhasil dibatalkan dan stok telah dikembalikan.']);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['message' => 'Terjadi kesalahan saat membatalkan pesanan.'], 500);
@@ -131,25 +169,30 @@ class OrderController extends Controller
      */
     public function show(Pesanan $pesanan)
     {
-        
-        $pesanan->load('details.product');
+        $user = Auth::user();
+        if ($user->role === 'admin_outlet' && $pesanan->outlet_id !== $user->outlet_id) {
+            return response()->json(['message' => 'Akses ditolak.'], 403);
+        }
+
+        $pesanan->load('details.product', 'outlet'); 
 
         return response()->json($pesanan, 200);
-
-       
     }
 
     /**
      * Update the status of the specified resource in storage.
-     * Ini adalah method baru untuk mengubah status
      */
     public function updateStatus(Request $request, Pesanan $pesanan)
     {
+        $user = Auth::user();
+        if ($user->role === 'admin_outlet' && $pesanan->outlet_id !== $user->outlet_id) {
+            return response()->json(['message' => 'Akses ditolak.'], 403);
+        }
         $validator = Validator::make($request->all(), [
             'status' => [
                 'required',
                 'string',
-                Rule::in(['Proses', 'Pending', 'Dibatalkan','Selesai']), 
+                Rule::in(['Proses', 'Pending', 'Dibatalkan', 'Selesai']),
             ],
         ]);
 
@@ -158,14 +201,19 @@ class OrderController extends Controller
         }
 
         try {
+            if ($request->status === 'Dibatalkan' && $pesanan->status !== 'Dibatalkan') {
+                if ($pesanan->status === 'pending') {
+                    return $this->cancel($pesanan);
+                }
+            }
+
             $pesanan->status = $request->status;
             $pesanan->save();
 
             return response()->json([
                 'message' => 'Status pesanan berhasil diperbarui',
-                'data' => $pesanan 
+                'data' => $pesanan
             ], 200);
-
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => 'Terjadi kesalahan pada server saat memperbarui status',
@@ -175,20 +223,39 @@ class OrderController extends Controller
     }
 
     public function getStats() {
-       $today = Carbon::now('Asia/Jakarta')->toDateString(); 
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json(['message' => 'User tidak terautentikasi'], 401);
+            }
+            
+            $today = Carbon::now('Asia/Jakarta')->toDateString(); 
+            $basePesananQuery = Pesanan::query();
+            if ($user->role === 'admin_outlet') {
+                $basePesananQuery->where('outlet_id', $user->outlet_id);
+            }
+            
+            $queryHariIni = clone $basePesananQuery;
+            $pesananHariIni = $queryHariIni->whereRaw("
+                DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?
+            ", [$today])->count();
 
-        $pesananHariIni = Pesanan::whereRaw("
-            DATE(CONVERT_TZ(created_at, '+00:00', '+07:00')) = ?
-        ", [$today])->count();
+            $queryPending = clone $basePesananQuery;
+            $menungguPembayaran = $queryPending->where('status', 'Pending')->count();
 
+            $queryProses = clone $basePesananQuery;
+            $perluDiproses = $queryProses->where('status', 'Proses')->count();
 
-        $menungguPembayaran = Pesanan::where('status', 'Pending')->count();
-        $perluDiproses = Pesanan::where('status', 'Proses')->count();
+            return response()->json([
+                'pesananHariIni' => $pesananHariIni,
+                'mengungguPembayaran' => $menungguPembayaran,
+                'perluDiProses' => $perluDiproses
+            ], 200);
 
-        return response()->json([
-            'pesananHariIni' => $pesananHariIni,
-            'mengungguPembayaran' => $menungguPembayaran,
-            'perluDiProses' => $perluDiproses
-        ],202);
+        } catch (\Throwable $th) {
+            return response()->json([
+                'message' => 'Query di OrderController@getStats Gagal: ' . $th->getMessage()
+            ], 500);
+        }
     }
 }

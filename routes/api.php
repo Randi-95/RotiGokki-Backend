@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\ProdukController;
+use App\Http\Controllers\StokController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -13,6 +14,10 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::middleware('auth:sanctum')->group(function(){
+    Route::get('/statistik', [OrderController::class, 'getStats']);
+    Route::get('/stok', [StokController::class, 'index']);
+    Route::get('/outlets/list-all', [OutletController::class, 'listAll']);
+    Route::post('/stok', [StokController::class, 'updateStok']);
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::post('/kategori', [CategoryController::class, 'store']);
     Route::post('/products', [ProdukController::class, 'store']);
@@ -21,7 +26,13 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::delete('/outlets/{id}', [OutletController::class, 'destroy']);
     Route::put('/outlets/{id}', [OutletController::class, 'update']);
     Route::delete('/products/{product}', [ProdukController::class, 'destroy']);
+
+
+Route::get('/orders', [OrderController::class, 'index']);
+Route::get('/orders/{pesanan}', [OrderController::class, 'show']);
 });
+
+Route::post('/orders', [OrderController::class, 'store']);
 
 Route::post('/pesanan/{pesanan}/cancel', [OrderController::class, 'cancel']);
 Route::patch('/orders/{pesanan}/status', [OrderController::class, 'updateStatus']);
@@ -43,10 +54,8 @@ Route::get('/totalProdukperKategori', [CategoryController::class, 'summary']);
 
 
 Route::prefix('/auth')->group(function(){
+    Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 });
 
-Route::post('/orders', [OrderController::class, 'store']);
-Route::get('/orders', [OrderController::class, 'index']);
-Route::get('/orders/{pesanan}', [OrderController::class, 'show']);
-Route::get('/statistik', [OrderController::class, 'getStats']);
+
