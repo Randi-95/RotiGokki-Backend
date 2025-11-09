@@ -20,9 +20,8 @@ Sebelum Anda memulai, pastikan perangkat lunak berikut telah terinstal di sistem
 
 * **PHP** (Versi >= 8.2)
 * **Composer** (Manajer paket PHP)
-* **Database** (e.g., MySQL, MariaDB, atau PostgreSQL)
+* **Database** (MySQL)
 * **Git** (Sistem kontrol versi)
-* **(Opsional)** Node.js & NPM (Jika ada manajemen aset frontend)
 
 ---
 
