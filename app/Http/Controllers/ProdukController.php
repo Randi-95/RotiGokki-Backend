@@ -34,7 +34,6 @@ class ProdukController extends Controller
             'nama' => 'required|string|max:255',
             'deskripsi' => 'nullable|string',
             'price' => 'required|numeric|min:0',
-            'stock' => 'required|integer|min:0',
             'category_id'=> 'required',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
@@ -67,7 +66,6 @@ class ProdukController extends Controller
             'nama' => 'sometimes|required|string|max:255',
             'deskripsi' => 'sometimes|nullable|string',
             'price' => 'sometimes|required|numeric|min:0',
-            'stock' => 'sometimes|required|integer|min:0',
             'category_id'=> 'sometimes|required|integer|min:0',
             'image' => 'sometimes|nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);

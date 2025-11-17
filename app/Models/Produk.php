@@ -17,7 +17,6 @@ class Produk extends Model
         'deskripsi',
         'image',
         'price',
-        'stock',
         'category_id',
     ];
 
