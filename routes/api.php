@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\CategoryManagementController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\ProdukController;
@@ -32,6 +33,11 @@ Route::middleware('auth:sanctum')->group(function(){
         Route::get('/users', [UserManagementController::class, 'index']);
         Route::post('/users', [UserManagementController::class, 'store']);
         Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
+
+        Route::get('/categories', [CategoryManagementController::class, 'index']);
+        Route::post('/categories', [CategoryManagementController::class, 'store']);
+        Route::patch('/categories/{category}', [CategoryManagementController::class, 'update']);
+        Route::delete('/categories/{category}', [CategoryManagementController::class, 'destroy']);
     });
 
 
