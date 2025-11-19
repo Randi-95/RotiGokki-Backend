@@ -6,6 +6,7 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\OutletController;
 use App\Http\Controllers\ProdukController;
 use App\Http\Controllers\StokController;
+use App\Http\Controllers\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +27,12 @@ Route::middleware('auth:sanctum')->group(function(){
     Route::delete('/outlets/{id}', [OutletController::class, 'destroy']);
     Route::put('/outlets/{id}', [OutletController::class, 'update']);
     Route::delete('/products/{product}', [ProdukController::class, 'destroy']);
+
+    Route::prefix('admin')->group(function(){
+        Route::get('/users', [UserManagementController::class, 'index']);
+        Route::post('/users', [UserManagementController::class, 'store']);
+        Route::delete('/users/{user}', [UserManagementController::class, 'destroy']);
+    });
 
 
 Route::get('/orders', [OrderController::class, 'index']);
