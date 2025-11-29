@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Pesanan extends Model
@@ -23,5 +24,10 @@ class Pesanan extends Model
   public function details(): HasMany
     {
         return $this->hasMany(DetailPesanan::class, 'pesanan_id', 'id');
+    }
+
+    public function outlet(): BelongsTo
+    {
+        return $this->belongsTo(Outlet::class, 'outlet_id', 'id');
     }
 }
