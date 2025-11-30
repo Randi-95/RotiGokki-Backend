@@ -42,7 +42,6 @@ Route::middleware('auth:sanctum')->group(function(){
 
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{pesanan}', [OrderController::class, 'show']);
-    Route::post('/orders', [OrderController::class, 'store']);
     Route::post('/pesanan/{pesanan}/cancel', [OrderController::class, 'cancel']);
     Route::patch('/orders/{pesanan}/status', [OrderController::class, 'updateStatus']);
 });
@@ -50,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function(){
 Route::get('/products', [ProdukController::class, 'index']);
 Route::get('/products/{id}', [ProdukController::class, 'show']);
 Route::get('/kategori', [CategoryController::class, 'index']);
+Route::post('/orders', [OrderController::class, 'store']);
 
 Route::get('/kategori/{category}/products', [ProdukController::class, 'getProductsByCategory']);
 

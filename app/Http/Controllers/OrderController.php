@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Auth; 
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -98,21 +99,23 @@ class OrderController extends Controller
             ]);
 
             foreach ($request->items as $item) {
+                $stockPivot = DB::table('outlet_produk')
+                    ->where('outlet_id', $request->outlet_id)
+                    ->where('product_id', $item['product_id']);
+
+                $currentStock = $stockPivot->value('stok');
+                if (is_null($currentStock) || $currentStock < $item['quantity']) {
+                    $productName = Produk::where('id', $item['product_id'])->value('nama') ?? ('produk ID ' . $item['product_id']);
+                    $remainingStock = $currentStock ?? 0;
+                    throw new \Exception('STOK_TIDAK_CUKUP: Stok ' . $productName . ' tidak mencukupi di outlet ini. Sisa stok: ' . $remainingStock);
+                }
+
                 DetailPesanan::create([
                     'pesanan_id' => $pesanan->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                 ]);
-
-                $stockPivot = DB::table('outlet_produk')
-                    ->where('outlet_id', $request->outlet_id)
-                    ->where('product_id', $item['product_id']);
-
-                $currentStock = $stockPivot->value('stok');
-                if ($currentStock < $item['quantity']) {
-                    throw new \Exception('Stok untuk produk ID ' . $item['product_id'] . ' di outlet ini tidak cukup.');
-                }
                 
                 $stockPivot->decrement('stok', $item['quantity']);
             }
@@ -126,9 +129,16 @@ class OrderController extends Controller
         } catch (\Throwable $th) {
             DB::rollBack();
 
+            $errorMessage = $th->getMessage();
+            if (Str::startsWith($errorMessage, 'STOK_TIDAK_CUKUP:')) {
+                return response()->json([
+                    'message' => trim(Str::after($errorMessage, 'STOK_TIDAK_CUKUP:')),
+                ], 422);
+            }
+
             return response()->json([
                 'message' => 'Terjadi kesalahan pada server',
-                'error' => $th->getMessage()
+                'error' => $errorMessage
             ], 500);
         }
     }
